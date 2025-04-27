@@ -1,63 +1,111 @@
 import styles from './ButtonRequestData.module.css';
-import axios from "axios";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addData, loginSuccessAddToken } from '../../../../Store/Slices/UserSlice';
+import {
+  changeStartTimestamp,
+  changeStepsInStore,
+  changeCoordinatesInStore,
+  changeNotificationsInStore,
+  changeHeartbeatInStore
+} from '../../../../Store/Slices/ChangebleLifeDataSlice';
+import { refreshToken } from "../../../EntranceForm/LoginForm/authService";
 
 export function ButtonRequestData() {
   const [error, setError] = useState(null);
   const dispatch = useDispatch();
   const tokenFromStore = useSelector((state) => state.user.tokenAuthorization);
 
-  const dateStr = "2024-12-17 19:29:15";
-  const date = new Date(dateStr + " UTC");
-  const timestamp = Math.floor(date.getTime() / 1000);
+  // При перезагрузке страницы пытаемся получить токен из localStorage
+  const token = tokenFromStore || localStorage.getItem("accessToken");
 
-  const requestData = async () => {
-    let token = tokenFromStore;
+  const fetchWithRefresh = async (url, currentToken) => {
+    let res = await fetch(url, {
+      headers: { Authorization: `Bearer ${currentToken}` },
+    });
 
-    if (!token) {
-      const savedToken = localStorage.getItem("accessToken");
-      if (savedToken) {
-        token = savedToken;
-        dispatch(loginSuccessAddToken(savedToken));
-      } else {
-        setError("Токен отсутствует. Пожалуйста, авторизуйтесь заново.");
-        return;
+    if (res.status === 401) {
+      const refreshed = await refreshToken(dispatch);
+      if (refreshed) {
+        res = await fetch(url, {
+          headers: { Authorization: `Bearer ${refreshed}` },
+        });
       }
     }
 
-    const url = `http://localhost:8080/api/users/get-data?timestamp=${timestamp}`;
+    if (!res.ok) {
+      throw new Error(`Ошибка при запросе ${url}, статус ${res.status}`);
+    }
+    return res.json();
+  };
+
+  const requestData = async () => {
+    if (!token) {
+      setError("Токен не найден. Пожалуйста, авторизуйтесь снова.");
+      return;
+    }
+
+    const stop = new Date().toISOString();
+    const start = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
     try {
-      const response = await axios.post(url, null, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      // Шаги
+      {
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=steps`;
+        const raw = await fetchWithRefresh(url, token);
+        const data = raw.map(({ timestamp, value }) => ({
+          timestamp,
+          value: Number(value),
+        }));
+        console.log("📊 Шаги с таймштампами:", data);
+        if (data.length > 0) {
+          dispatch(changeStartTimestamp(data[0].timestamp));
+        }
+        dispatch(changeStepsInStore(data));
+      }
 
-      if (response.status === 200) {
-        dispatch(addData(response.data));
-      } else {
-        setError(`Ошибка: ${response.status} ${response.statusText}`);
+      // Координаты
+      {
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=coordinates`;
+        const raw = await fetchWithRefresh(url, token);
+        const data = raw.map(({ timestamp, value }) => {
+          const [lat, lng] = value.split(":").map(Number);
+          return { timestamp, coords: [lat, lng] };
+        });
+        console.log("📍 Координаты с таймштампами:", data);
+        dispatch(changeCoordinatesInStore(data));
       }
-    } catch (error) {
-      if (error.response) {
-        setError(error.response.data.message || "Ошибка при получении данных");
-      } else if (error.request) {
-        setError("Сервер не отвечает. Попробуйте позже.");
-      } else {
-        setError("Ошибка: " + error.message);
+
+      // Уведомления
+      {
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=notifications`;
+        const raw = await fetchWithRefresh(url, token);
+        const data = raw.map(({ timestamp, value }) => ({ timestamp, value }));
+        console.log("🔔 Уведомления с таймштампами:", data);
+        dispatch(changeNotificationsInStore(data));
       }
+
+      // Пульс
+      {
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=heartbeat`;
+        const raw = await fetchWithRefresh(url, token);
+        const data = raw.map(({ timestamp, value }) => ({
+          timestamp,
+          value: parseFloat(value),
+        }));
+        console.log("❤️ Пульс с таймштампами:", data);
+        dispatch(changeHeartbeatInStore(data));
+      }
+
+    } catch (err) {
+      console.error("❌ Ошибка при загрузке метрик:", err.message);
+      setError(err.message || "Ошибка при загрузке данных");
     }
   };
 
   return (
-    <div>
-      <button className={styles.button} onClick={requestData}>
-        <div className={styles.text}>Загрузить данные</div>
-      </button>
+    <button className={styles.button} onClick={requestData}>
+      <div className={styles.text}>Загрузить данные</div>
       {error && <div className={styles.error}>{error}</div>}
-    </div>
+    </button>
   );
 }
