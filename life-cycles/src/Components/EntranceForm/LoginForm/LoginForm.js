@@ -1,3 +1,4 @@
+// src/Components/EntranceForm/LoginForm/LoginForm.js
 import { useState, useEffect } from "react";
 import { ButtonAcceptForm } from "../ButtonAcceptForm/ButtonAcceptForm";
 import { FieldForInput } from "../FieldForInput/FieldForInput";
@@ -17,8 +18,10 @@ import {
 } from "../../../Store/Slices/ChangebleLifeDataSlice";
 
 import { refreshToken } from "./authService";
-
+const API_URL = process.env.REACT_APP_API_URL;
 export function LoginForm() {
+
+
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,11 +64,11 @@ export function LoginForm() {
     const stop = new Date().toISOString();
     const start = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   
-    const baseUrl = "/api/proxy"; // аккуратно
+    const baseUrl = "http://51.250.108.190:8080/api/users/get";
   
     try {
-      const buildUrl = (metricType) => 
-        `${baseUrl}?start=${encodeURIComponent(start)}&stop=${encodeURIComponent(stop)}&metricType=${encodeURIComponent(metricType)}`;
+      const buildUrl = (metricType) =>
+        `${baseUrl}?start=${start}&stop=${stop}&metricType=${metricType}`;
   
       // Steps
       {
@@ -128,7 +131,7 @@ export function LoginForm() {
 
     try {
       const resp = await axios.post(
-        "/api/login",
+        `${API_URL}/api/auth/login`,
         new URLSearchParams({ username: login, password }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
