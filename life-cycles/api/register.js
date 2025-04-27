@@ -28,6 +28,11 @@ export default async function handler(req, res) {
             const data = await response.json(); // Получаем ответ от внешнего API
             console.log('Ответ внешнего API: ', data); // Логируем ответ
 
+            if (!response.ok) {
+                console.error('Ошибка с внешним API:', data);
+                return res.status(response.status).json({ message: 'Ошибка регистрации через внешний API' });
+            }
+
             // Прокси возвращает ответ от внешнего сервера
             res.status(response.status).json(data);
 
