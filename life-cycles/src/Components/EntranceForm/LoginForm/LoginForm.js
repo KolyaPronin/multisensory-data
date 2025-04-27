@@ -60,60 +60,66 @@ export function LoginForm() {
   const fetchAllMetrics = async (currentToken) => {
     const stop = new Date().toISOString();
     const start = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-
+  
+    const baseUrl = "/api/proxy"; // аккуратно
+  
     try {
+      const buildUrl = (metricType) => 
+        `${baseUrl}?start=${encodeURIComponent(start)}&stop=${encodeURIComponent(stop)}&metricType=${encodeURIComponent(metricType)}`;
+  
       // Steps
       {
-        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=steps`;
+        const url = buildUrl("steps");
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
           value: Number(value),
         }));
-        console.log("📊 Шаги с таймштампами:", data);
+        console.log("📊 Шаги:", data);
         if (data.length > 0) {
           dispatch(changeStartTimestamp(data[0].timestamp));
         }
         dispatch(changeStepsInStore(data));
       }
-
+  
       // Coordinates
       {
-        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=coordinates`;
+        const url = buildUrl("coordinates");
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => {
           const [lat, lng] = value.split(":").map(Number);
           return { timestamp, coords: [lat, lng] };
         });
-        console.log("📍 Координаты с таймштампами:", data);
+        console.log("📍 Координаты:", data);
         dispatch(changeCoordinatesInStore(data));
       }
-
+  
       // Notifications
       {
-        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=notifications`;
+        const url = buildUrl("notifications");
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({ timestamp, value }));
-        console.log("🔔 Уведомления с таймштампами:", data);
+        console.log("🔔 Уведомления:", data);
         dispatch(changeNotificationsInStore(data));
       }
-
+  
       // Heartbeat
       {
-        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=heartbeat`;
+        const url = buildUrl("heartbeat");
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
           value: parseFloat(value),
         }));
-        console.log("❤️ Пульс с таймштампами:", data);
+        console.log("❤️ Пульс:", data);
         dispatch(changeHeartbeatInStore(data));
       }
-
+  
     } catch (err) {
       console.error("❌ Ошибка при загрузке метрик:", err.message);
     }
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
