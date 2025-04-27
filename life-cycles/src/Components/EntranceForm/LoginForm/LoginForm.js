@@ -1,4 +1,3 @@
-// src/Components/EntranceForm/LoginForm/LoginForm.js
 import { useState, useEffect } from "react";
 import { ButtonAcceptForm } from "../ButtonAcceptForm/ButtonAcceptForm";
 import { FieldForInput } from "../FieldForInput/FieldForInput";
