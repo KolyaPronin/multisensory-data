@@ -48,6 +48,9 @@ export function RegistrationForm() {
         },
       });
 
+      // Логируем успешный ответ
+      console.log('Ответ сервера регистрации: ', response.data);
+
       // При успешной регистрации сохраняем токен в Redux и локальном хранилище
       dispatch(loginSuccessAddToken(response.data.accessToken));
       dispatch(loginSuccessAddUsername(login));
@@ -58,6 +61,7 @@ export function RegistrationForm() {
       navigate("/home");
 
     } catch (error) {
+      console.error('Ошибка при регистрации:', error); // Логируем ошибку
       // Обработка ошибок
       if (error.response) {
         setError(error.response.data.message || "Не удалось создать пользователя.");
