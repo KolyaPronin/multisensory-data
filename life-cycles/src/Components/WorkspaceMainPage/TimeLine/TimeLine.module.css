@@ -1,0 +1,61 @@
+.container {
+  width: 80%;
+  margin: 20px auto;
+  text-align: center;
+}
+
+.timeline {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.year {
+  position: relative;
+  font-size: 12px;
+  z-index: 1;
+  margin-bottom: 20px; /* Увеличим отступ снизу для текста */
+}
+
+.year::before {
+  content: "";
+  position: absolute;
+  bottom: -10px; /* Засечка будет ниже текста */
+  left: 50%;
+  width: 3px;
+  height: 6px;
+  background: black;
+  transform: translateX(-50%);
+  z-index: 0;
+}
+
+.slider {
+  width: 100%;
+  margin: 10px 0;
+}
+
+.track {
+  background: #ddd;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.thumb {
+  background: #4caf50;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.selectedTime {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 40px;
+}
+
+.data {
+  margin-top: 20px;
+  font-size: 16px;
+}
