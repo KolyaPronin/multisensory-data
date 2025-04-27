@@ -18,8 +18,6 @@ import {
 
 import { refreshToken } from "./authService";
 
-const API_URL = process.env.REACT_APP_API_URL;
-
 export function LoginForm() {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +43,6 @@ export function LoginForm() {
     let res = await fetch(url, {
       headers: { Authorization: `Bearer ${currentToken}` },
     });
-
     if (res.status === 401) {
       const refreshed = await refreshToken(dispatch);
       if (refreshed) {
@@ -54,11 +51,9 @@ export function LoginForm() {
         });
       }
     }
-
     if (!res.ok) {
       throw new Error(`Ошибка при запросе ${url}, статус ${res.status}`);
     }
-
     return res.json();
   };
 
@@ -66,21 +61,16 @@ export function LoginForm() {
     const stop = new Date().toISOString();
     const start = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-    const baseUrl = "/api/proxy"; // Прокси вместо прямого IP
-
-    const buildUrl = (metricType) =>
-      `${baseUrl}?start=${start}&stop=${stop}&metricType=${metricType}`;
-
     try {
       // Steps
       {
-        const url = buildUrl("steps");
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=steps`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
           value: Number(value),
         }));
-        console.log("📊 Шаги:", data);
+        console.log("📊 Шаги с таймштампами:", data);
         if (data.length > 0) {
           dispatch(changeStartTimestamp(data[0].timestamp));
         }
@@ -89,36 +79,37 @@ export function LoginForm() {
 
       // Coordinates
       {
-        const url = buildUrl("coordinates");
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=coordinates`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => {
           const [lat, lng] = value.split(":").map(Number);
           return { timestamp, coords: [lat, lng] };
         });
-        console.log("📍 Координаты:", data);
+        console.log("📍 Координаты с таймштампами:", data);
         dispatch(changeCoordinatesInStore(data));
       }
 
       // Notifications
       {
-        const url = buildUrl("notifications");
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=notifications`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({ timestamp, value }));
-        console.log("🔔 Уведомления:", data);
+        console.log("🔔 Уведомления с таймштампами:", data);
         dispatch(changeNotificationsInStore(data));
       }
 
       // Heartbeat
       {
-        const url = buildUrl("heartbeat");
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=heartbeat`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
           value: parseFloat(value),
         }));
-        console.log("❤️ Пульс:", data);
+        console.log("❤️ Пульс с таймштампами:", data);
         dispatch(changeHeartbeatInStore(data));
       }
+
     } catch (err) {
       console.error("❌ Ошибка при загрузке метрик:", err.message);
     }
@@ -131,7 +122,7 @@ export function LoginForm() {
 
     try {
       const resp = await axios.post(
-        `${API_URL}/api/auth/login`,
+        "/api/login",
         new URLSearchParams({ username: login, password }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );
@@ -141,10 +132,15 @@ export function LoginForm() {
       localStorage.setItem("accessToken", resp.data.accessToken);
       localStorage.setItem("refreshToken", resp.data.refreshToken);
       navigate("/home");
+
     } catch (err) {
-      const errorMessage = err.response?.data?.message
-        || (err.request ? "Сервер не отвечает. Попробуйте позже." : "Ошибка: " + err.message);
-      setError(errorMessage);
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.request) {
+        setError("Сервер не отвечает. Попробуйте позже.");
+      } else {
+        setError("Ошибка: " + err.message);
+      }
     } finally {
       setLoading(false);
     }
