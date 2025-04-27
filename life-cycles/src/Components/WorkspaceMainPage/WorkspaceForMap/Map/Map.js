@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -16,33 +16,9 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// Флажок для пользователя
-const flagIcon = L.divIcon({
-  html: '🚩',
-  iconSize: [24, 24],
-  className: ''
-});
-
 export function Map() {
   const rawCoordinates = useSelector((state) => state.changebleLifeData.coordinates);
   const currentTimestamp = useSelector((state) => state.time.time);
-
-  const [userPosition, setUserPosition] = useState(null);
-
-  // Запрашиваем текущее положение пользователя
-  useEffect(() => {
-    if (navigator.geolocation) {
-      const watchId = navigator.geolocation.watchPosition(
-        ({ coords }) => {
-          setUserPosition([coords.latitude, coords.longitude]);
-        },
-        (err) => console.warn('Geolocation error:', err),
-        { enableHighAccuracy: true }
-      );
-
-      return () => navigator.geolocation.clearWatch(watchId);
-    }
-  }, []);
 
   // Сортировка координат по времени
   const sorted = useMemo(() => {
@@ -111,15 +87,6 @@ export function Map() {
           <Marker position={currentPosition} icon={defaultIcon}>
             <Popup>Время: {currentTimestamp}</Popup>
           </Marker>
-        )}
-
-        {/* Метка местоположения пользователя */}
-        {userPosition && (
-          <>
-            <Marker position={userPosition} icon={flagIcon}>
-              <Popup>Вы здесь</Popup>
-            </Marker>
-          </>
         )}
       </MapContainer>
     </div>
