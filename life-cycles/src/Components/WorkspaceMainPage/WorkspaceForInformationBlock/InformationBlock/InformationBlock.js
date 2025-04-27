@@ -1,40 +1,45 @@
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import styles from './InformationBlock.module.css';
 
 export function InformationBlock() {
-  const stepsData = useSelector(s => s.changebleLifeData.steps);
-  const notificationsData = useSelector(s => s.changebleLifeData.notifications);
-  const heartbeatData = useSelector(s => s.changebleLifeData.heartbeat);
-  const currentTimestamp = useSelector(s => s.time.time);
+  const stepsData = useSelector(state => state.changebleLifeData.steps);
+  const notificationsData = useSelector(state => state.changebleLifeData.notifications);
+  const heartbeatData = useSelector(state => state.changebleLifeData.heartbeat);
+  const currentTimestamp = useSelector(state => state.time.time);
 
   const [currentSteps, setCurrentSteps] = useState("Нет данных");
   const [currentNotif, setCurrentNotif] = useState("Нет данных");
   const [currentBeat, setCurrentBeat] = useState("Нет данных");
 
-  // Функция для поиска шагов по timestamp
-  const findByTimestamp = (arr, timestamp) => {
-    return Array.isArray(arr)
-      ? arr.find(item => new Date(item.timestamp).getTime() === new Date(timestamp).getTime())
-      : null;
+  // Функция для поиска последнего значения по времени
+  const findLatestBeforeTimestamp = (arr, timestamp) => {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+
+    const targetTime = new Date(timestamp).getTime();
+
+    // Фильтруем те элементы, которые меньше или равны целевому времени
+    const filtered = arr.filter(item => new Date(item.timestamp).getTime() <= targetTime);
+
+    // Если есть подходящие записи, берем ту, что ближе всего к целевому времени
+    if (filtered.length > 0) {
+      return filtered.reduce((latest, item) =>
+        new Date(item.timestamp).getTime() > new Date(latest.timestamp).getTime() ? item : latest
+      );
+    }
+
+    return null; // Нет подходящих данных
   };
 
   useEffect(() => {
-    //console.log("currentTimestamp:", currentTimestamp); // Логируем текущий таймштамп
+    const currentStepData = findLatestBeforeTimestamp(stepsData, currentTimestamp);
+    const currentNotifData = findLatestBeforeTimestamp(notificationsData, currentTimestamp);
+    const currentBeatData = findLatestBeforeTimestamp(heartbeatData, currentTimestamp);
 
-    // Преобразуем currentTimestamp в Date объект для правильного сравнения
-    const currentStepData = findByTimestamp(stepsData, currentTimestamp);
-    const currentNotifData = findByTimestamp(notificationsData, currentTimestamp);
-    const currentBeatData = findByTimestamp(heartbeatData, currentTimestamp);
-
-    //console.log("Шаги для текущего времени:", currentStepData); // Логируем найденные данные для шагов
-
-    // Если данные найдены, обновляем состояние
     setCurrentSteps(currentStepData ? currentStepData.value : "Нет данных");
     setCurrentNotif(currentNotifData ? currentNotifData.value : "Нет данных");
     setCurrentBeat(currentBeatData ? currentBeatData.value : "Нет данных");
-
-  }, [currentTimestamp, stepsData, notificationsData, heartbeatData]); // Обновляем при изменении currentTimestamp
+  }, [currentTimestamp, stepsData, notificationsData, heartbeatData]);
 
   // Форматирование числовых значений
   const formatValue = (value) => {
