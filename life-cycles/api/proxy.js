@@ -1,32 +1,33 @@
-// api/proxy.js
-
 export default async function handler(req, res) {
-    const { method, query, body, headers } = req;
+    if (req.method !== 'GET') {
+      return res.status(405).json({ message: 'Method Not Allowed' });
+    }
   
-    // Указываем адрес твоего сервера
-    const serverUrl = 'http://51.250.108.190:8080/api/users/get'; // Пример URL твоего сервера
+    const { start, stop, metricType } = req.query;
+  
+    if (!start || !stop || !metricType) {
+      return res.status(400).json({ message: 'Missing required query parameters' });
+    }
+  
+    // Формируем целевой URL с параметрами
+    const targetUrl = `http://51.250.108.190:8080/api/users/get?start=${encodeURIComponent(start)}&stop=${encodeURIComponent(stop)}&metricType=${encodeURIComponent(metricType)}`;
   
     try {
-      // Выполняем запрос к твоему серверу
-      const response = await fetch(serverUrl, {
-        method: method, // Прокси-метод (например, GET или POST)
+      const response = await fetch(targetUrl, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
-          ...headers, // Можно передавать другие заголовки из запроса
+          Authorization: req.headers.authorization || '',
         },
-        body: method === 'POST' ? JSON.stringify(body) : null, // Передаем тело запроса, если это POST
       });
   
-      // Проверяем, если ответ от сервера не успешен
       if (!response.ok) {
         return res.status(response.status).json({ message: 'Error from backend' });
       }
   
-      // Получаем ответ от сервера
       const data = await response.json();
       res.status(200).json(data);
     } catch (error) {
-      console.error('Error during fetch:', error);
+      console.error('Ошибка на прокси:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }

@@ -18,10 +18,10 @@ import {
 } from "../../../Store/Slices/ChangebleLifeDataSlice";
 
 import { refreshToken } from "./authService";
+
 const API_URL = process.env.REACT_APP_API_URL;
+
 export function LoginForm() {
-
-
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,6 +46,7 @@ export function LoginForm() {
     let res = await fetch(url, {
       headers: { Authorization: `Bearer ${currentToken}` },
     });
+
     if (res.status === 401) {
       const refreshed = await refreshToken(dispatch);
       if (refreshed) {
@@ -54,22 +55,24 @@ export function LoginForm() {
         });
       }
     }
+
     if (!res.ok) {
       throw new Error(`Ошибка при запросе ${url}, статус ${res.status}`);
     }
+
     return res.json();
   };
 
   const fetchAllMetrics = async (currentToken) => {
     const stop = new Date().toISOString();
     const start = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  
-    const baseUrl = "http://51.250.108.190:8080/api/users/get";
-  
+
+    const baseUrl = "/api/proxy"; // Прокси вместо прямого IP
+
+    const buildUrl = (metricType) =>
+      `${baseUrl}?start=${start}&stop=${stop}&metricType=${metricType}`;
+
     try {
-      const buildUrl = (metricType) =>
-        `${baseUrl}?start=${start}&stop=${stop}&metricType=${metricType}`;
-  
       // Steps
       {
         const url = buildUrl("steps");
@@ -84,7 +87,7 @@ export function LoginForm() {
         }
         dispatch(changeStepsInStore(data));
       }
-  
+
       // Coordinates
       {
         const url = buildUrl("coordinates");
@@ -96,7 +99,7 @@ export function LoginForm() {
         console.log("📍 Координаты:", data);
         dispatch(changeCoordinatesInStore(data));
       }
-  
+
       // Notifications
       {
         const url = buildUrl("notifications");
@@ -105,7 +108,7 @@ export function LoginForm() {
         console.log("🔔 Уведомления:", data);
         dispatch(changeNotificationsInStore(data));
       }
-  
+
       // Heartbeat
       {
         const url = buildUrl("heartbeat");
@@ -117,12 +120,10 @@ export function LoginForm() {
         console.log("❤️ Пульс:", data);
         dispatch(changeHeartbeatInStore(data));
       }
-  
     } catch (err) {
       console.error("❌ Ошибка при загрузке метрик:", err.message);
     }
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -141,15 +142,10 @@ export function LoginForm() {
       localStorage.setItem("accessToken", resp.data.accessToken);
       localStorage.setItem("refreshToken", resp.data.refreshToken);
       navigate("/home");
-
     } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else if (err.request) {
-        setError("Сервер не отвечает. Попробуйте позже.");
-      } else {
-        setError("Ошибка: " + err.message);
-      }
+      const errorMessage = err.response?.data?.message
+        || (err.request ? "Сервер не отвечает. Попробуйте позже." : "Ошибка: " + err.message);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
