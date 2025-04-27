@@ -1,4 +1,3 @@
-// src/Components/EntranceForm/LoginForm/LoginForm.js
 import { useState, useEffect } from "react";
 import { ButtonAcceptForm } from "../ButtonAcceptForm/ButtonAcceptForm";
 import { FieldForInput } from "../FieldForInput/FieldForInput";
@@ -18,10 +17,8 @@ import {
 } from "../../../Store/Slices/ChangebleLifeDataSlice";
 
 import { refreshToken } from "./authService";
-const API_URL = process.env.REACT_APP_API_URL;
+
 export function LoginForm() {
-
-
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +64,7 @@ export function LoginForm() {
     try {
       // Steps
       {
-        const url = `${API_URL}/api/users/get?start=${start}&stop=${stop}&metricType=steps`;
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=steps`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
@@ -82,8 +79,7 @@ export function LoginForm() {
 
       // Coordinates
       {
-        const url = `${API_URL}/api/users/get?start=${start}&stop=${stop}&metricType=coordinates`;
-
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=coordinates`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => {
           const [lat, lng] = value.split(":").map(Number);
@@ -95,7 +91,7 @@ export function LoginForm() {
 
       // Notifications
       {
-        const url = `${API_URL}/api/users/get?start=${start}&stop=${stop}&metricType=notifications`;
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=notifications`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({ timestamp, value }));
         console.log("🔔 Уведомления с таймштампами:", data);
@@ -104,8 +100,7 @@ export function LoginForm() {
 
       // Heartbeat
       {
-        const url = `${API_URL}/api/users/get?start=${start}&stop=${stop}&metricType=heartbeat`;
-
+        const url = `/api/proxy?start=${start}&stop=${stop}&metricType=heartbeat`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({
           timestamp,
@@ -127,7 +122,7 @@ export function LoginForm() {
 
     try {
       const resp = await axios.post(
-        `${API_URL}/api/auth/login`,
+        "/api/login",
         new URLSearchParams({ username: login, password }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
       );

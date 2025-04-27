@@ -8,7 +8,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { loginSuccessAddToken, loginSuccessAddUsername } from '../../../Store/Slices/UserSlice';
 
-const API_URL = process.env.REACT_APP_API_URL;
+
 export function RegistrationForm() {
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +25,7 @@ export function RegistrationForm() {
     setLoading(true);
     setError(null);
     if (password === passwordConfirm) {
-      const url = `${API_URL}/api/auth/register`;
+    const url = "http://51.250.108.190:8080/api/auth/register"; 
 
     const requestBody = new URLSearchParams();
     requestBody.append("username", login); 
