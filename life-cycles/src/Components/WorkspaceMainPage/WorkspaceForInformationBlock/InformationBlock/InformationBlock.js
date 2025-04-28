@@ -37,7 +37,7 @@ export function InformationBlock() {
     const currentBeatData = findLatestBeforeTimestamp(heartbeatData, currentTimestamp);
 
     setCurrentSteps(currentStepData ? currentStepData.value : "Нет данных");
-    setCurrentNotif(currentNotifData ? currentNotifData.value : "Нет данных");
+    setCurrentNotif(currentNotifData ? extractMessage(currentNotifData.value) : "Нет данных");
     setCurrentBeat(currentBeatData ? currentBeatData.value : "Нет данных");
   }, [currentTimestamp, stepsData, notificationsData, heartbeatData]);
 
@@ -48,6 +48,13 @@ export function InformationBlock() {
     }
     return value;
   };
+
+  const extractMessage = (value) => {
+    if (!value) return "Нет данных";
+    const messageMatch = value.match(/message:([^;]*)/);
+    return messageMatch ? messageMatch[1] : value;
+  };
+  
 
   return (
     <div className={styles.container}>
