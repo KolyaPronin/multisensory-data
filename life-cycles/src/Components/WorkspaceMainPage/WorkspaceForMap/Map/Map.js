@@ -4,8 +4,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
 import { useSelector } from 'react-redux';
+import { FlyToCurrentPosition } from './FlyToCurrentPosition'; // <<< добавили импорт
 
-// Стандартный маркер для таймлайна
+// Стандартный маркер
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -20,12 +21,9 @@ export function Map() {
   const rawCoordinates = useSelector((state) => state.changebleLifeData.coordinates);
   const currentTimestamp = useSelector((state) => state.time.time);
 
-  // Сортировка координат по времени
   const sorted = useMemo(() => {
     if (!Array.isArray(rawCoordinates)) return [];
-    return [...rawCoordinates].sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
+    return [...rawCoordinates].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }, [rawCoordinates]);
 
   const allCoords = useMemo(() => sorted.map((o) => o.coords), [sorted]);
@@ -73,7 +71,10 @@ export function Map() {
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {/* Отрисовка пройденного пути */}
+        {/* Вот тут добавляем авто-слежение */}
+        {currentPosition && <FlyToCurrentPosition position={currentPosition} />}
+
+        {/* Пройденный путь */}
         <Polyline
           positions={traveledPath}
           color="#1890ff"
@@ -82,7 +83,7 @@ export function Map() {
           lineCap="round"
         />
 
-        {/* Метка текущего положения таймлайна */}
+        {/* Метка текущего положения */}
         {currentPosition && (
           <Marker position={currentPosition} icon={defaultIcon}>
             <Popup>Время: {currentTimestamp}</Popup>
