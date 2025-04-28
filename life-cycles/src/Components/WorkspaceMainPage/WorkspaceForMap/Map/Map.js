@@ -18,7 +18,7 @@ const defaultIcon = L.icon({
 export function Map() {
   const rawCoordinates = useSelector((state) => state.changebleLifeData.coordinates);
   const currentTimestamp = useSelector((state) => state.time.time);
-  const mapRef = useRef(null); // Реф для управления картой
+  const mapRef = useRef(null);
 
   // Сортировка координат
   const sorted = useMemo(() => {
@@ -43,20 +43,19 @@ export function Map() {
     [sorted, currentTimestamp]
   );
 
-  // Границы карты
-  const mapBounds = useMemo(() => {
-    if (!allCoords.length) return null;
-    return allCoords.reduce((bounds, coord) => bounds.extend(coord), L.latLngBounds(allCoords[0], allCoords[0]));
-  }, [allCoords]);
-
-  // Центрируем карту при изменении currentPosition
+  // Центрируем карту при изменении currentPosition (ГАРАНТИРОВАННО)
   useEffect(() => {
-    if (currentPosition && mapRef.current) {
-      mapRef.current.flyTo(currentPosition, mapRef.current.getZoom(), {
-        duration: 0.5, // Плавность анимации (в секундах)
-        easeLinearity: 0.25 // Параметр плавности
-      });
-    }
+    if (!mapRef.current || !currentPosition) return;
+
+    const map = mapRef.current;
+    const currentZoom = map.getZoom();
+    
+    // Жёстко центрируем карту на метке (без анимации, если нужно мгновенно)
+    map.setView(currentPosition, currentZoom, { animate: true, duration: 0.5 });
+
+    // Либо: плавный flyTo (если предпочтительнее)
+    // map.flyTo(currentPosition, currentZoom, { duration: 0.5 });
+
   }, [currentPosition]);
 
   if (!allCoords.length) {
@@ -72,12 +71,10 @@ export function Map() {
       <MapContainer
         center={currentPosition || allCoords[0]}
         zoom={18}
-        minZoom={15}  // Минимальный зум
-        maxZoom={20}  // Максимальный зум
+        minZoom={3}  // Можно уменьшать сильнее
+        maxZoom={25} // Можно увеличивать сильнее
         style={{ width: '100%', height: '100%' }}
-        bounds={mapBounds}
-        maxBounds={mapBounds?.pad(0.5)}
-        whenCreated={(map) => (mapRef.current = map)} // Сохраняем инстанс карты в реф
+        whenCreated={(map) => (mapRef.current = map)}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
