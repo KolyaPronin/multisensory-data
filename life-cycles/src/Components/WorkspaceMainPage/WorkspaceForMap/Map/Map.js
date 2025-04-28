@@ -53,7 +53,8 @@ export function Map() {
   useEffect(() => {
     if (currentPosition && mapRef.current) {
       mapRef.current.flyTo(currentPosition, mapRef.current.getZoom(), {
-        duration: 1 // Плавность анимации (в секундах)
+        duration: 0.5, // Плавность анимации (в секундах)
+        easeLinearity: 0.25 // Параметр плавности
       });
     }
   }, [currentPosition]);
