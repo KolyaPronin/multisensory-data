@@ -4,10 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
 import { useSelector } from 'react-redux';
-import { FlyToCurrentPosition } from './FlyToCurrentPosition';
 
-
-// Стандартный маркер
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -24,7 +21,9 @@ export function Map() {
 
   const sorted = useMemo(() => {
     if (!Array.isArray(rawCoordinates)) return [];
-    return [...rawCoordinates].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return [...rawCoordinates].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
   }, [rawCoordinates]);
 
   const allCoords = useMemo(() => sorted.map((o) => o.coords), [sorted]);
@@ -48,7 +47,12 @@ export function Map() {
     );
   }, [allCoords]);
 
-  if (!allCoords.length) {
+  // Проверка: если координат вообще нет или все нулевые — НЕ показываем карту
+  const hasValidCoords = allCoords.length > 0 && !allCoords.every(
+    ([lat, lng]) => lat === 0 && lng === 0
+  );
+
+  if (!hasValidCoords) {
     return (
       <div className={styles.container}>
         <h3>Нет данных для отображения</h3>
@@ -61,8 +65,8 @@ export function Map() {
       <MapContainer
         center={currentPosition || allCoords[0]}
         zoom={18}
-        minZoom={13}
-        maxZoom={20 }
+        minZoom={17}
+        maxZoom={18}
         style={{ width: '100%', height: '100%' }}
         bounds={mapBounds}
         maxBounds={mapBounds?.pad(0.5)}
@@ -72,10 +76,6 @@ export function Map() {
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {/* Вот тут добавляем авто-слежение */}
-        {currentPosition && <FlyToCurrentPosition position={currentPosition} />}
-
-        {/* Пройденный путь */}
         <Polyline
           positions={traveledPath}
           color="#1890ff"
@@ -84,7 +84,6 @@ export function Map() {
           lineCap="round"
         />
 
-        {/* Метка текущего положения */}
         {currentPosition && (
           <Marker position={currentPosition} icon={defaultIcon}>
             <Popup>Время: {currentTimestamp}</Popup>
