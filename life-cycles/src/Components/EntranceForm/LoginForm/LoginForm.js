@@ -94,7 +94,7 @@ export function LoginForm() {
         const url = `/api/proxy?start=${start}&stop=${stop}&metricType=notification`;
         const raw = await fetchWithRefresh(url, currentToken);
         const data = raw.map(({ timestamp, value }) => ({ timestamp, value }));
-        console.log("🔔 Уведомления с таймштампами:", data);
+        console.log("🔔 Уведомления с таймштампами: ", data);
         dispatch(changeNotificationsInStore(data));
       }
 
