@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { useMemo, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
@@ -15,9 +15,25 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41]
 });
 
+// Компонент для следования за позицией
+function FlyToCurrentPosition({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (position) {
+      map.flyTo(position, map.getZoom(), {
+        duration: 0.5
+      });
+    }
+  }, [position, map]);
+
+  return null;
+}
+
 export function Map() {
   const rawCoordinates = useSelector((state) => state.changebleLifeData.coordinates);
   const currentTimestamp = useSelector((state) => state.time.time);
+  const mapRef = useRef(null);
 
   const sorted = useMemo(() => {
     if (!Array.isArray(rawCoordinates)) return [];
@@ -29,7 +45,8 @@ export function Map() {
   const allCoords = useMemo(() => sorted.map((o) => o.coords), [sorted]);
 
   const currentEntry = useMemo(
-    () => sorted.find((o) => o.timestamp === currentTimestamp),
+    () => sorted.find((o) => o.timestamp === currentTimestamp) || 
+          sorted.filter((o) => new Date(o.timestamp) <= new Date(currentTimestamp)).slice(-1)[0],
     [sorted, currentTimestamp]
   );
   const currentPosition = currentEntry?.coords || null;
@@ -47,7 +64,6 @@ export function Map() {
     );
   }, [allCoords]);
 
-  // Проверка: если координат вообще нет или все нулевые — НЕ показываем карту
   const hasValidCoords = allCoords.length > 0 && !allCoords.every(
     ([lat, lng]) => lat === 0 && lng === 0
   );
@@ -65,11 +81,12 @@ export function Map() {
       <MapContainer
         center={currentPosition || allCoords[0]}
         zoom={18}
-        minZoom={17}
-        maxZoom={18}
+        minZoom={15}  // Расширенный диапазон zoom
+        maxZoom={20}  // Расширенный диапазон zoom
         style={{ width: '100%', height: '100%' }}
         bounds={mapBounds}
         maxBounds={mapBounds?.pad(0.5)}
+        whenCreated={(map) => (mapRef.current = map)}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -85,9 +102,12 @@ export function Map() {
         />
 
         {currentPosition && (
-          <Marker position={currentPosition} icon={defaultIcon}>
-            <Popup>Время: {currentTimestamp}</Popup>
-          </Marker>
+          <>
+            <Marker position={currentPosition} icon={defaultIcon}>
+              <Popup>Время: {currentTimestamp}</Popup>
+            </Marker>
+            <FlyToCurrentPosition position={currentPosition} />
+          </>
         )}
       </MapContainer>
     </div>
