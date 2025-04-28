@@ -62,8 +62,8 @@ export function Map() {
       <MapContainer
         center={currentPosition || allCoords[0]}
         zoom={18}
-        minZoom={17}
-        maxZoom={18}
+        minZoom={13}
+        maxZoom={20}
         style={{ width: '100%', height: '100%' }}
         bounds={mapBounds}
         maxBounds={mapBounds?.pad(0.5)}
