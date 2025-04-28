@@ -1,10 +1,11 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
 import { useSelector } from 'react-redux';
 
+// Стандартный маркер для таймлайна
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -18,45 +19,35 @@ const defaultIcon = L.icon({
 export function Map() {
   const rawCoordinates = useSelector((state) => state.changebleLifeData.coordinates);
   const currentTimestamp = useSelector((state) => state.time.time);
-  const mapRef = useRef(null);
 
-  // Сортировка координат
+  // Сортировка координат по времени
   const sorted = useMemo(() => {
     if (!Array.isArray(rawCoordinates)) return [];
-    return [...rawCoordinates].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    return [...rawCoordinates].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
   }, [rawCoordinates]);
 
   const allCoords = useMemo(() => sorted.map((o) => o.coords), [sorted]);
 
-  // Находим текущую позицию (если нет точного совпадения — берём последнюю доступную)
-  const currentEntry = useMemo(() => {
-    if (!sorted.length) return null;
-    const exactMatch = sorted.find((o) => o.timestamp === currentTimestamp);
-    return exactMatch || sorted.filter((o) => new Date(o.timestamp) <= new Date(currentTimestamp)).slice(-1)[0];
-  }, [sorted, currentTimestamp]);
-
+  const currentEntry = useMemo(
+    () => sorted.find((o) => o.timestamp === currentTimestamp),
+    [sorted, currentTimestamp]
+  );
   const currentPosition = currentEntry?.coords || null;
 
-  // Пройденный путь
   const traveledPath = useMemo(
     () => sorted.filter((o) => new Date(o.timestamp) <= new Date(currentTimestamp)).map((o) => o.coords),
     [sorted, currentTimestamp]
   );
 
-  // Центрируем карту при изменении currentPosition (ГАРАНТИРОВАННО)
-  useEffect(() => {
-    if (!mapRef.current || !currentPosition) return;
-
-    const map = mapRef.current;
-    const currentZoom = map.getZoom();
-    
-    // Жёстко центрируем карту на метке (без анимации, если нужно мгновенно)
-    map.setView(currentPosition, currentZoom, { animate: true, duration: 0.5 });
-
-    // Либо: плавный flyTo (если предпочтительнее)
-    // map.flyTo(currentPosition, currentZoom, { duration: 0.5 });
-
-  }, [currentPosition]);
+  const mapBounds = useMemo(() => {
+    if (!allCoords.length) return null;
+    return allCoords.reduce(
+      (bounds, coord) => bounds.extend(coord),
+      L.latLngBounds(allCoords[0], allCoords[0])
+    );
+  }, [allCoords]);
 
   if (!allCoords.length) {
     return (
@@ -71,16 +62,18 @@ export function Map() {
       <MapContainer
         center={currentPosition || allCoords[0]}
         zoom={18}
-        minZoom={3}  // Можно уменьшать сильнее
-        maxZoom={25} // Можно увеличивать сильнее
+        minZoom={17}
+        maxZoom={18}
         style={{ width: '100%', height: '100%' }}
-        whenCreated={(map) => (mapRef.current = map)}
+        bounds={mapBounds}
+        maxBounds={mapBounds?.pad(0.5)}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
 
+        {/* Отрисовка пройденного пути */}
         <Polyline
           positions={traveledPath}
           color="#1890ff"
@@ -89,6 +82,7 @@ export function Map() {
           lineCap="round"
         />
 
+        {/* Метка текущего положения таймлайна */}
         {currentPosition && (
           <Marker position={currentPosition} icon={defaultIcon}>
             <Popup>Время: {currentTimestamp}</Popup>
