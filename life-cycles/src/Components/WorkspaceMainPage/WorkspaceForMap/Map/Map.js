@@ -4,7 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
 import { useSelector } from 'react-redux';
-import { FlyToCurrentPosition } from './FlyToCurrentPosition'; // <<< добавили импорт
+import { FlyToCurrentPosition } from './FlyToCurrentPosition';
+
 
 // Стандартный маркер
 const defaultIcon = L.icon({
@@ -61,7 +62,7 @@ export function Map() {
         center={currentPosition || allCoords[0]}
         zoom={18}
         minZoom={13}
-        maxZoom={20}
+        maxZoom={20 }
         style={{ width: '100%', height: '100%' }}
         bounds={mapBounds}
         maxBounds={mapBounds?.pad(0.5)}
